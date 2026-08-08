@@ -10,18 +10,18 @@ document.addEventListener('DOMContentLoaded', () => {
     THEME: 'home_shop_theme_v1'
   };
 
-  // --- Initial Seed Data (Home Shop Products) ---
+  // --- Initial Seed Data (Beer & Beverage Store Products) ---
   const DEFAULT_PRODUCTS = [
-    { id: 'PRD-101', name: 'Organic Fresh Milk (1L)', category: 'Dairy & Eggs', costPrice: 1.80, sellPrice: 2.99, stock: 24, minStock: 5 },
-    { id: 'PRD-102', name: 'Artisan Whole Wheat Bread', category: 'Bakery', costPrice: 1.20, sellPrice: 2.50, stock: 15, minStock: 4 },
-    { id: 'PRD-103', name: 'Dark Roast Coffee Beans (500g)', category: 'Beverages', costPrice: 6.50, sellPrice: 11.99, stock: 12, minStock: 3 },
-    { id: 'PRD-104', name: 'Sparkling Mineral Water (6x500ml)', category: 'Beverages', costPrice: 3.00, sellPrice: 5.49, stock: 18, minStock: 5 },
-    { id: 'PRD-105', name: 'Extra Virgin Olive Oil (750ml)', category: 'Pantry', costPrice: 7.20, sellPrice: 13.50, stock: 8, minStock: 3 },
-    { id: 'PRD-106', name: 'Sea Salt Potato Chips (150g)', category: 'Snacks', costPrice: 0.95, sellPrice: 2.20, stock: 30, minStock: 8 },
-    { id: 'PRD-107', name: 'Eco Dishwashing Liquid (750ml)', category: 'Household', costPrice: 1.90, sellPrice: 3.80, stock: 4, minStock: 5 }, // Low stock sample
-    { id: 'PRD-108', name: 'Free-Range Eggs (Dozen)', category: 'Dairy & Eggs', costPrice: 2.20, sellPrice: 3.99, stock: 20, minStock: 6 },
-    { id: 'PRD-109', name: 'Raw Honey Jar (350g)', category: 'Pantry', costPrice: 4.50, sellPrice: 8.50, stock: 10, minStock: 2 },
-    { id: 'PRD-110', name: 'Natural Orange Juice (1L)', category: 'Beverages', costPrice: 1.60, sellPrice: 3.29, stock: 3, minStock: 5 } // Low stock sample
+    { id: 'BEER-101', name: 'Hoppy Craft IPA (6-Pack 330ml)', category: 'Craft Beers', costPrice: 9.50, sellPrice: 15.99, stock: 24, minStock: 5 },
+    { id: 'BEER-102', name: 'Belgian Amber Ale (750ml Bottle)', category: 'Craft Beers', costPrice: 5.20, sellPrice: 9.99, stock: 15, minStock: 4 },
+    { id: 'BEER-103', name: 'Imperial Dark Stout (4-Pack)', category: 'Craft Beers', costPrice: 8.50, sellPrice: 14.50, stock: 12, minStock: 3 },
+    { id: 'BEER-104', name: 'Crisp Pilsner Lager (6-Pack Can)', category: 'Lager & Pilsner', costPrice: 6.00, sellPrice: 11.49, stock: 30, minStock: 8 },
+    { id: 'BEER-105', name: 'Artisanal Apple Cider (500ml)', category: 'Ciders', costPrice: 2.50, sellPrice: 4.99, stock: 18, minStock: 5 },
+    { id: 'BEER-106', name: 'Wheat Hefeweizen (500ml Bottle)', category: 'Wheat Beers', costPrice: 2.20, sellPrice: 4.50, stock: 20, minStock: 6 },
+    { id: 'WINE-201', name: 'Vintage Cabernet Sauvignon (750ml)', category: 'Wines', costPrice: 12.00, sellPrice: 22.99, stock: 8, minStock: 3 },
+    { id: 'BEER-107', name: 'Organic Pale Ale (330ml Can)', category: 'Craft Beers', costPrice: 1.90, sellPrice: 3.80, stock: 4, minStock: 5 }, // Low stock sample
+    { id: 'SNK-301', name: 'Smoked Almonds & Beer Nuts (250g)', category: 'Bar Snacks', costPrice: 2.10, sellPrice: 4.20, stock: 25, minStock: 6 },
+    { id: 'BEER-108', name: 'Non-Alcoholic Golden Ale (6-Pack)', category: 'Non-Alcoholic', costPrice: 5.50, sellPrice: 9.99, stock: 3, minStock: 5 } // Low stock sample
   ];
 
   // Seed Sales History (Past 7 days simulation)
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = 'INV-' + Math.floor(100000 + Math.random() * 900000);
         const p1 = DEFAULT_PRODUCTS[j % DEFAULT_PRODUCTS.length];
         const p2 = DEFAULT_PRODUCTS[(j + 3) % DEFAULT_PRODUCTS.length];
-        
+
         const qty1 = 1 + (j % 2);
         const qty2 = 1;
 
@@ -90,9 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
     toast.className = `toast ${type}`;
     toast.innerHTML = `
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        ${type === 'success' 
-          ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' 
-          : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
+        ${type === 'success'
+        ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'
+        : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
       </svg>
       <span>${message}</span>
     `;
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     tabViews.forEach(view => {
-      if (view.id === `${tabId}View`) {
+      if (view.id === `GH₵{tabId}View`) {
         view.classList.add('active');
       } else {
         view.classList.remove('active');
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filtered = products.filter(p => {
       const matchQuery = p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query) || p.category.toLowerCase().includes(query);
       const matchCat = selectedCat === 'ALL' || p.category === selectedCat;
-      
+
       let matchStatus = true;
       if (selectedStatus === 'LOW') matchStatus = p.stock <= p.minStock && p.stock > 0;
       if (selectedStatus === 'OUT') matchStatus = p.stock === 0;
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.forEach(p => {
       const unitProfit = p.sellPrice - p.costPrice;
       const profitMargin = p.sellPrice > 0 ? ((unitProfit / p.sellPrice) * 100).toFixed(1) : 0;
-      
+
       let stockBadge = '<span class="status-badge badge-success">In Stock</span>';
       if (p.stock === 0) {
         stockBadge = '<span class="status-badge badge-danger">Out of Stock</span>';
@@ -755,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
 
     const filtered = sales.filter(s => {
-      const matchQuery = s.id.toLowerCase().includes(query) || 
+      const matchQuery = s.id.toLowerCase().includes(query) ||
         s.items.some(i => i.name.toLowerCase().includes(query)) ||
         s.paymentMethod.toLowerCase().includes(query);
 
