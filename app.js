@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Format Currency Helper
   function formatMoney(amount) {
-    return '$' + parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '₵' + parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   // --- Tab Navigation ---
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     tabViews.forEach(view => {
-      if (view.id === `GH₵{tabId}View`) {
+      if (view.id === `${tabId}View`) {
         view.classList.add('active');
       } else {
         view.classList.remove('active');

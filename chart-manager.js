@@ -38,7 +38,7 @@ window.ShopCharts = (function () {
         labels: trendData.labels,
         datasets: [
           {
-            label: 'Sales Revenue ($)',
+            label: 'Sales Revenue (₵)',
             data: trendData.revenue,
             borderColor: '#10b981',
             backgroundColor: 'rgba(16, 185, 129, 0.12)',
@@ -49,7 +49,7 @@ window.ShopCharts = (function () {
             pointHoverRadius: 6
           },
           {
-            label: 'Net Profit ($)',
+            label: 'Net Profit (₵)',
             data: trendData.profit,
             borderColor: '#8b5cf6',
             backgroundColor: 'rgba(139, 92, 246, 0.12)',
@@ -96,7 +96,7 @@ window.ShopCharts = (function () {
             ticks: {
               color: theme.textColor,
               font: { family: 'Inter', size: 11 },
-              callback: (value) => '$' + value.toLocaleString()
+              callback: (value) => '₵' + value.toLocaleString()
             }
           }
         }
@@ -153,7 +153,7 @@ window.ShopCharts = (function () {
               label: function (context) {
                 const label = context.label || '';
                 const val = context.parsed || 0;
-                return `${label}: $${val.toFixed(2)}`;
+                return `${label}: ₵${val.toFixed(2)}`;
               }
             }
           }
