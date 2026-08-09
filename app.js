@@ -70,16 +70,115 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- Application State ---
-  let products = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS)) || DEFAULT_PRODUCTS;
-  let sales = JSON.parse(localStorage.getItem(STORAGE_KEYS.SALES)) || getSeedSales();
+  const API_BASE = window.location.hostname && window.location.hostname !== 'file' ? window.location.origin : 'http://127.0.0.1:3000';
+  let products = [];
+  let sales = [];
   let posCart = [];
   let selectedPaymentMethod = 'Cash';
   let activeTab = 'overview';
+  let lastUpdatedAt = parseInt(localStorage.getItem('home_shop_state_updated_at') || '0', 10);
 
-  // Save to LocalStorage
+  function applyState(nextState) {
+    if (!nextState) return;
+
+    if (Array.isArray(nextState.products)) {
+      products = nextState.products;
+    } else {
+      products = DEFAULT_PRODUCTS;
+    }
+
+    if (Array.isArray(nextState.sales)) {
+      sales = nextState.sales;
+    } else {
+      sales = getSeedSales();
+    }
+
+    const theme = nextState.theme || localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem(STORAGE_KEYS.THEME, theme);
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+    localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
+  }
+
+  function loadInitialState() {
+    try {
+      const localProducts = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS));
+      const localSales = JSON.parse(localStorage.getItem(STORAGE_KEYS.SALES));
+      if (Array.isArray(localProducts) && Array.isArray(localSales)) {
+        products = localProducts;
+        sales = localSales;
+      } else {
+        products = DEFAULT_PRODUCTS;
+        sales = getSeedSales();
+      }
+    } catch (error) {
+      products = DEFAULT_PRODUCTS;
+      sales = getSeedSales();
+    }
+
+    const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+    localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
+    localStorage.setItem(STORAGE_KEYS.THEME, savedTheme);
+  }
+
+  loadInitialState();
+
+  async function syncStateToServer() {
+    const payload = {
+      products,
+      sales,
+      theme: document.body.getAttribute('data-theme') || 'dark',
+      updatedAt: Date.now()
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/api/data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.updatedAt) {
+          lastUpdatedAt = data.updatedAt;
+          localStorage.setItem('home_shop_state_updated_at', String(lastUpdatedAt));
+        }
+      }
+    } catch (error) {
+      console.warn('Shared sync unavailable:', error);
+    }
+  }
+
+  async function loadStateFromServer() {
+    try {
+      const response = await fetch(`${API_BASE}/api/data`);
+      if (!response.ok) return;
+
+      const remoteData = await response.json();
+      if (!remoteData) return;
+
+      const remoteUpdatedAt = remoteData.updatedAt || 0;
+      if (remoteUpdatedAt > lastUpdatedAt) {
+        applyState(remoteData);
+        lastUpdatedAt = remoteUpdatedAt;
+        localStorage.setItem('home_shop_state_updated_at', String(lastUpdatedAt));
+      }
+    } catch (error) {
+      console.warn('Could not load shared state:', error);
+    }
+  }
+
+  // Save to LocalStorage and sync to the shared server
   function saveData() {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
     localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
+    localStorage.setItem(STORAGE_KEYS.THEME, document.body.getAttribute('data-theme') || 'dark');
+    lastUpdatedAt = Date.now();
+    localStorage.setItem('home_shop_state_updated_at', String(lastUpdatedAt));
+    syncStateToServer();
   }
 
   // Toast Notification System
@@ -142,12 +241,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
   document.body.setAttribute('data-theme', savedTheme);
 
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+    });
+  }
+
   themeToggleBtn?.addEventListener('click', () => {
     const currentTheme = document.body.getAttribute('data-theme');
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     document.body.setAttribute('data-theme', newTheme);
     localStorage.setItem(STORAGE_KEYS.THEME, newTheme);
     updateDashboardCharts();
+    saveData();
   });
 
   // Mobile Menu Toggle
@@ -156,6 +262,11 @@ document.addEventListener('DOMContentLoaded', () => {
   mobileMenuBtn?.addEventListener('click', () => {
     sidebar.classList.toggle('mobile-open');
   });
+
+  loadStateFromServer();
+  setInterval(() => {
+    loadStateFromServer();
+  }, 5000);
 
   // --- Calculate Overall Stats ---
   function calculateMetrics() {
