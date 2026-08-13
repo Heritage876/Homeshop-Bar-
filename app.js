@@ -165,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyState(remoteData);
         lastUpdatedAt = remoteUpdatedAt;
         localStorage.setItem('home_shop_state_updated_at', String(lastUpdatedAt));
+        renderAllViews();
       }
     } catch (error) {
       console.warn('Could not load shared state:', error);
@@ -205,11 +206,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- Tab Navigation ---
-  const navItems = document.querySelectorAll('.nav-item[data-tab]');
+  const navItems = document.querySelectorAll('[data-tab]');
   const tabViews = document.querySelectorAll('.tab-view');
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
-  function switchTab(tabId) {
+  function switchTab(tabId, pushHistory = true) {
     activeTab = tabId;
+
+    // Reset scroll position to top when changing views
+    const viewContainer = document.querySelector('.view-container');
+    if (viewContainer) viewContainer.scrollTop = 0;
+    window.scrollTo(0, 0);
+
     navItems.forEach(item => {
       if (item.dataset.tab === tabId) {
         item.classList.add('active');
@@ -226,6 +235,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Close mobile menu if open
+    sidebar?.classList.remove('mobile-open');
+    sidebarBackdrop?.classList.remove('active');
+
+    // Update browser history for phone back button support
+    if (pushHistory && window.history) {
+      if (history.state?.tab !== tabId) {
+        history.pushState({ tab: tabId }, '', `#${tabId}`);
+      }
+    }
+
     // Refresh view specific data
     renderAllViews();
   }
@@ -233,6 +253,35 @@ document.addEventListener('DOMContentLoaded', () => {
   navItems.forEach(item => {
     item.addEventListener('click', () => switchTab(item.dataset.tab));
   });
+
+  // Phone & Browser Back Button (popstate) Handler
+  window.addEventListener('popstate', (e) => {
+    // 1. Close open modals first
+    const activeModal = document.querySelector('.modal-overlay.active');
+    if (activeModal) {
+      activeModal.classList.remove('active');
+      return;
+    }
+
+    // 2. Close mobile menu drawer if open
+    if (sidebar && sidebar.classList.contains('mobile-open')) {
+      sidebar.classList.remove('mobile-open');
+      sidebarBackdrop?.classList.remove('active');
+      return;
+    }
+
+    // 3. Switch to previous tab from state or hash
+    const targetTab = e.state?.tab || location.hash.replace('#', '') || 'overview';
+    switchTab(targetTab, false);
+  });
+
+  // Initial tab load from URL hash
+  if (location.hash) {
+    const initialHash = location.hash.replace('#', '');
+    if (document.getElementById(`${initialHash}View`)) {
+      switchTab(initialHash, false);
+    }
+  }
 
   document.getElementById('quickSaleBtn')?.addEventListener('click', () => switchTab('pos'));
 
@@ -256,17 +305,36 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData();
   });
 
-  // Mobile Menu Toggle
+  // Mobile Menu & Backdrop Toggle
   const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-  const sidebar = document.querySelector('.sidebar');
   mobileMenuBtn?.addEventListener('click', () => {
-    sidebar.classList.toggle('mobile-open');
+    sidebar?.classList.toggle('mobile-open');
+    sidebarBackdrop?.classList.toggle('active');
+  });
+
+  sidebarBackdrop?.addEventListener('click', () => {
+    sidebar?.classList.remove('mobile-open');
+    sidebarBackdrop?.classList.remove('active');
   });
 
   loadStateFromServer();
   setInterval(() => {
     loadStateFromServer();
-  }, 5000);
+  }, 2000);
+
+  // Sync state whenever the phone screen wakes up or tab gains focus
+  window.addEventListener('focus', loadStateFromServer);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) loadStateFromServer();
+  });
+
+  // Cross-tab storage sync for multi-window devices
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEYS.PRODUCTS || e.key === STORAGE_KEYS.SALES) {
+      loadInitialState();
+      renderAllViews();
+    }
+  });
 
   // --- Calculate Overall Stats ---
   function calculateMetrics() {
@@ -374,20 +442,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Category Sales breakdown
     const catMap = {};
+    const payMap = {};
+    const prodMap = {};
+
     sales.forEach(s => {
+      payMap[s.paymentMethod] = (payMap[s.paymentMethod] || 0) + s.totalAmount;
+
       s.items.forEach(item => {
         const prod = products.find(p => p.id === item.productId);
         const category = prod ? prod.category : 'General';
         catMap[category] = (catMap[category] || 0) + (item.sellPrice * item.qty);
+
+        const prodName = prod ? prod.name : item.name;
+        prodMap[prodName] = (prodMap[prodName] || 0) + (item.sellPrice * item.qty);
       });
     });
 
     const catLabels = Object.keys(catMap);
     const catValues = Object.values(catMap).map(v => parseFloat(v.toFixed(2)));
 
+    const payLabels = Object.keys(payMap);
+    const payValues = Object.values(payMap).map(v => parseFloat(v.toFixed(2)));
+
+    const sortedProds = Object.entries(prodMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const prodLabels = sortedProds.map(p => p[0]);
+    const prodValues = sortedProds.map(p => parseFloat(p[1].toFixed(2)));
+
     window.ShopCharts.updateCharts(
       { labels: trendLabels, revenue: trendRevenue, profit: trendProfit },
-      { labels: catLabels.length ? catLabels : ['No Sales Yet'], values: catValues.length ? catValues : [1] }
+      { labels: catLabels.length ? catLabels : ['No Sales Yet'], values: catValues.length ? catValues : [1] },
+      { labels: payLabels.length ? payLabels : ['No Data'], values: payValues.length ? payValues : [1] },
+      { labels: prodLabels.length ? prodLabels : ['No Data'], values: prodValues.length ? prodValues : [1] }
     );
   }
 

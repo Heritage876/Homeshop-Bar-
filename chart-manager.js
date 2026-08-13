@@ -109,7 +109,7 @@ window.ShopCharts = (function () {
     ctx.fillRect(10, 48, 12, 3);
   }
 
-  function drawCategoryChart(canvas, categoryData) {
+  function drawDoughnutChart(canvas, categoryData, centerTitle) {
     const info = getCanvasContext(canvas);
     if (!info) return;
 
@@ -143,12 +143,12 @@ window.ShopCharts = (function () {
     ctx.fillStyle = theme.textColor;
     ctx.font = '600 14px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Sales Mix', centerX, centerY);
+    ctx.fillText(centerTitle, centerX, centerY);
 
     ctx.font = '12px Inter, sans-serif';
     ctx.textAlign = 'left';
     const legendX = 18;
-    const legendY = height - 16;
+    const legendY = height - Math.max(16, categoryData.labels.length * 10);
     categoryData.labels.forEach((label, index) => {
       const y = legendY + index * 18;
       ctx.fillStyle = colors[index % colors.length];
@@ -156,6 +156,65 @@ window.ShopCharts = (function () {
       ctx.fillStyle = theme.textColor;
       ctx.fillText(`${label}`, legendX + 16, y);
     });
+  }
+
+  function drawBarChart(canvas, data) {
+    const info = getCanvasContext(canvas);
+    if (!info) return;
+
+    const { ctx, width, height } = info;
+    const theme = getThemeColors();
+    const padding = { top: 20, right: 60, bottom: 20, left: 120 };
+    const plotWidth = width - padding.left - padding.right;
+    const plotHeight = height - padding.top - padding.bottom;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (!data.labels || data.labels.length === 0) return;
+
+    const barHeight = Math.max(8, Math.min(24, (plotHeight / data.labels.length) - 8));
+    const maxValue = Math.max(...data.values, 1);
+    
+    data.values.forEach((value, index) => {
+      const y = padding.top + index * (plotHeight / data.labels.length) + (plotHeight / data.labels.length - barHeight) / 2;
+      const barWidth = (value / maxValue) * plotWidth;
+      
+      // Draw background bar
+      ctx.fillStyle = theme.gridColor;
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(padding.left, y, plotWidth, barHeight, 4);
+      } else {
+        ctx.rect(padding.left, y, plotWidth, barHeight);
+      }
+      ctx.fill();
+
+      // Draw actual bar
+      ctx.fillStyle = '#10b981'; // Accent Revenue
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(padding.left, y, barWidth, barHeight, 4);
+      } else {
+        ctx.rect(padding.left, y, barWidth, barHeight);
+      }
+      ctx.fill();
+
+      // Draw label
+      ctx.fillStyle = theme.textColor;
+      ctx.font = '12px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      
+      let label = data.labels[index];
+      if (label.length > 16) label = label.substring(0, 15) + '...';
+      ctx.fillText(label, padding.left - 10, y + barHeight / 2);
+
+      // Draw value text
+      ctx.textAlign = 'left';
+      ctx.fillStyle = theme.textColor;
+      ctx.fillText('₵' + value.toFixed(2), padding.left + barWidth + 8, y + barHeight / 2);
+    });
+    ctx.textBaseline = 'alphabetic'; // reset
   }
 
   function initSalesTrendChart(canvasId, trendData) {
@@ -168,18 +227,34 @@ window.ShopCharts = (function () {
   function initCategoryChart(canvasId, categoryData) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    drawCategoryChart(canvas, categoryData);
+    drawDoughnutChart(canvas, categoryData, 'Sales Mix');
     categoryChart = true;
   }
 
-  function updateCharts(trendData, categoryData) {
+  function initPaymentMethodChart(canvasId, paymentData) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    drawDoughnutChart(canvas, paymentData, 'Payments');
+  }
+
+  function initTopProductsChart(canvasId, topData) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    drawBarChart(canvas, topData);
+  }
+
+  function updateCharts(trendData, categoryData, paymentData, topData) {
     if (trendData) initSalesTrendChart('salesTrendChart', trendData);
     if (categoryData) initCategoryChart('categoryChart', categoryData);
+    if (paymentData) initPaymentMethodChart('paymentMethodChart', paymentData);
+    if (topData) initTopProductsChart('topProductsChart', topData);
   }
 
   return {
     initSalesTrendChart,
     initCategoryChart,
+    initPaymentMethodChart,
+    initTopProductsChart,
     updateCharts
   };
 })();
